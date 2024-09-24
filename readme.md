@@ -162,6 +162,8 @@ LIBRARY_SPLIT = 10000
 NHENTAI_TAGS = ['language:"english"']
 SLEEP_INTERVAL = 50000
 USER_AGENT = "your user agent here"
+CONVERT_TO_WEBP = true
+WEBP_QUALITY = 75
 ```
 
 ## Exporting Favourites
