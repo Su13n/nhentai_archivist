@@ -247,7 +247,6 @@ impl Hentai
             std::fs::File::open(&image_filepath)?.read_to_end(&mut image_data)?;
         
             // Check if WebP conversion is enabled
-            
             if config.CONVERT_TO_WEBP.unwrap_or(false) {
                 // Load image using the image crate
                 let img = ImageReader::new(std::io::Cursor::new(&image_data))
@@ -257,31 +256,33 @@ impl Hentai
                     })?
                     .decode()
                     .map_err(|e| HentaiDownloadError::ImageDecodingError { source: e })?;
-
+            
                 // Convert the image to RGBA8 color type
-                let img = img.to_rgba8();
-
+                let img_rgba8 = img.to_rgba8();
+            
                 // Encode image to WebP format with optional quality setting
-                let quality = config.WEBP_QUALITY.unwrap_or(100) as f32;
-                let encoder = Encoder::from_rgba(img.as_raw(), img.width(), img.height());
+                let quality = config.WEBP_QUALITY.unwrap_or(75) as f32;
+                let encoder = Encoder::from_rgba(img_rgba8.as_raw(), img_rgba8.width(), img_rgba8.height());
+                let webp_data = encoder.encode(quality).to_vec();
 
-                let webp_data = encoder.encode(quality);
-
-                // Update image data and filename
-                image_data = webp_data.to_vec();
-                let webp_filename = format!(
-                    "{}.webp",
-                    image_filename.trim_end_matches(|c| c != '.').trim_end_matches('.')
-                );
-
-                zip_writer.start_file(&webp_filename, zip::write::SimpleFileOptions::default().unix_permissions(0o666))?;
-
-                //zip_writer.write_all(&image_data)?;
+                // Compare the sizes of the original image data and the WebP image data
+                if webp_data.len() < image_data.len() {
+                    // WebP image is smaller, use it
+                    image_data = webp_data;
+                    // Update the image filename to have a .webp extension
+                    let webp_filename = format!(
+                        "{}.webp",
+                        image_filename.trim_end_matches(|c| c != '.').trim_end_matches('.')
+                    );
+                    zip_writer.start_file(&webp_filename, zip::write::SimpleFileOptions::default().unix_permissions(0o666))?;
+                } else {
+                    // Original image is smaller, keep it
+                    zip_writer.start_file(image_filename, zip::write::SimpleFileOptions::default().unix_permissions(0o666))?;
+                }
             } else {
                 // Keep the original image format
                 zip_writer.start_file(image_filename, zip::write::SimpleFileOptions::default().unix_permissions(0o666))?; // create image file in cbz with permissions "rw-rw-rw-"
             }
-        
             zip_writer.write_all(&image_data)?;
             log::debug!(
                 "Saved hentai image {} / {} in cbz.",
