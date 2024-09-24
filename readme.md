@@ -99,9 +99,9 @@ Further settings:
 
 	Set to `true` to enable conversion of images to WebP format before packaging into CBZ.
 
-- `WEBP_QUALITY` (Optional, default: `75.0`)
+- `WEBP_QUALITY` (Optional, default: `75`)
   
-	Specifies the quality level for WebP compression (range: `0.0` to `100.0`).
+	Specifies the quality level for WebP compression (range: `0` to `100`). "Lossless" i.e., a value of 100 might not be of any benefit due to nhentai already hosting heavily compressed files. Compressing them back into lossless format will more often than not increase file size. The script automatically keeps the smaller image, so if your priority is quality > space, then go for lossless. If you need more space, I recommend keeping at at the default value or lower. Do some test runs first.
 
 
 ## Usage

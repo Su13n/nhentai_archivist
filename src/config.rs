@@ -41,7 +41,7 @@ impl Default for Config
             SLEEP_INTERVAL: Some(50000),
             USER_AGENT: "".to_owned(),
             CONVERT_TO_WEBP: Some(false),
-            WEBP_QUALITY: Some(100),  // Default quality level
+            WEBP_QUALITY: Some(75),  // Default quality level
         }
     }
 }
