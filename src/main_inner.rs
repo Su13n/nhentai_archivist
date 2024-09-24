@@ -86,7 +86,7 @@ pub async fn main_inner(config: Config) -> Result<(), Error>
                     }
                 }
 
-                if let Err(e) = hentai.download(&http_client, config.CLEANUP_TEMPORARY_FILES).await
+                if let Err(e) = hentai.download(&http_client, config.CLEANUP_TEMPORARY_FILES, &config).await
                 {
                     log::error!{"{e}"};
                 }

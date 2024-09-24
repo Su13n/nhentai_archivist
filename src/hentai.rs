@@ -12,7 +12,9 @@ use std::os::unix::fs::PermissionsExt;
 use std::str::FromStr;
 use tokio::io::AsyncWriteExt;
 use unicode_segmentation::UnicodeSegmentation;
-
+use image::ImageReader;
+use webp::Encoder;
+use crate::config::Config;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Hentai
@@ -133,7 +135,7 @@ impl Hentai
     ///
     /// # Returns
     /// - nothing or error
-    pub async fn download(&self, http_client: &reqwest::Client, cleanup_temporary_files: bool) -> Result<(), HentaiDownloadError>
+    pub async fn download(&self, http_client: &reqwest::Client, cleanup_temporary_files: bool, config: &Config) -> Result<(), HentaiDownloadError>
     {
         const WORKERS: usize = 5; // number of parallel workers
         let cbz_final_filepath: String; //filepath to final cbz in library
@@ -239,19 +241,55 @@ impl Hentai
         }
 
         zip_writer = zip::ZipWriter::new(zip_file); // create cbz writer
-        for (i, image_filename) in self.images_filename.iter().enumerate() // load images into cbz
-        {
-            let mut image: Vec<u8> = Vec::new();
-            std::fs::File::open(format!("{}{}/{image_filename}", self.library_path, self.id))?.read_to_end(&mut image)?; // open image file, read image into memory
-            zip_writer.start_file(image_filename, zip::write::SimpleFileOptions::default().unix_permissions(0o666))?; // create image file in cbz with permissions "rw-rw-rw-"
-            zip_writer.write_all(&image)?; // write image into cbz
-            log::debug!("Saved hentai image {} / {} in cbz.", f.format((i+1) as f64), f.format(self.num_pages));
+        for (i, image_filename) in self.images_filename.iter().enumerate() {
+            let image_filepath = format!("{}{}/{}", self.library_path, self.id, image_filename);
+            let mut image_data = Vec::new();
+            std::fs::File::open(&image_filepath)?.read_to_end(&mut image_data)?;
+        
+            // Check if WebP conversion is enabled
+            
+            if config.CONVERT_TO_WEBP.unwrap_or(false) {
+                // Load image using the image crate
+                let img = ImageReader::new(std::io::Cursor::new(&image_data))
+                    .with_guessed_format()
+                    .map_err(|e| HentaiDownloadError::ImageDecodingError {
+                        source: image::ImageError::IoError(e),
+                    })?
+                    .decode()
+                    .map_err(|e| HentaiDownloadError::ImageDecodingError { source: e })?;
+
+                // Convert the image to RGBA8 color type
+                let img = img.to_rgba8();
+
+                // Encode image to WebP format with optional quality setting
+                let quality = config.WEBP_QUALITY.unwrap_or(100) as f32;
+                let encoder = Encoder::from_rgba(img.as_raw(), img.width(), img.height());
+
+                let webp_data = encoder.encode(quality);
+
+                // Update image data and filename
+                image_data = webp_data.to_vec();
+                let webp_filename = format!(
+                    "{}.webp",
+                    image_filename.trim_end_matches(|c| c != '.').trim_end_matches('.')
+                );
+
+                zip_writer.start_file(&webp_filename, zip::write::SimpleFileOptions::default().unix_permissions(0o666))?;
+
+                //zip_writer.write_all(&image_data)?;
+            } else {
+                // Keep the original image format
+                zip_writer.start_file(image_filename, zip::write::SimpleFileOptions::default().unix_permissions(0o666))?; // create image file in cbz with permissions "rw-rw-rw-"
+            }
+        
+            zip_writer.write_all(&image_data)?;
+            log::debug!(
+                "Saved hentai image {} / {} in cbz.",
+                f.format((i + 1) as f64),
+                f.format(self.num_pages)
+            );
         }
-        #[cfg(target_family = "unix")]
-        zip_writer.start_file("ComicInfo.xml", zip::write::SimpleFileOptions::default().unix_permissions(0o666))?; // create metadata file in cbz with permissions "rw-rw-rw-"
-        #[cfg(not(target_family = "unix"))]
-        zip_writer.start_file("ComicInfo.xml", zip::write::SimpleFileOptions::default())?; // create metadata file in cbz without permissions
-        zip_writer.write_all(serde_xml_rs::to_string(&ComicInfoXml::from(self.clone()))?.as_bytes())?; // write metadata into cbz
+        
         zip_writer.finish()?; // finish temporary cbz
 
         #[cfg(target_family = "unix")]

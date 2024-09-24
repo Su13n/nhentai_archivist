@@ -95,6 +95,15 @@ Further settings:
 
     Setting this to a value other than 0 splits the library at `LIBRARY_PATH` into sub-directories with a maximum number of `LIBRARY_SPLIT` hentai allowed per sub-directory. It is recommended if the number of hentai in 1 directory starts to affect file explorer performance. This _should_ not affect you if you plan to keep less than 10.000 files in your `LIBRARY_PATH` directory, otherwise the recommended setting is `LIBRARY_SPLIT = 10000`.
 
+- `CONVERT_TO_WEBP` (Optional, default: `false`)
+
+	Set to `true` to enable conversion of images to WebP format before packaging into CBZ.
+
+- `WEBP_QUALITY` (Optional, default: `75.0`)
+  
+	Specifies the quality level for WebP compression (range: `0.0` to `100.0`).
+
+
 ## Usage
 ### Download a Few Quickly
 

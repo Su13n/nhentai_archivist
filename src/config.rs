@@ -18,6 +18,9 @@ pub struct Config
     pub NHENTAI_TAGS: Option<Vec<String>>, // keep creating downloadme.txt from these tags and keep downloading (server mode), normal tags are in format "tag:{tag}" for example "tag:ffm-threesome"; if None: don't generate downloadme.txt, download hentai once (client mode)
     pub SLEEP_INTERVAL: Option<u64>, // sleep interval in seconds between checking for new hentai to download (server mode)
     pub USER_AGENT: String, // bypass bot protection
+    pub CONVERT_TO_WEBP: Option<bool>,  // Enable or disable WebP conversion
+    pub WEBP_QUALITY: Option<u8>,      // Quality setting for lossy compression (0 to 100)
+
 }
 
 impl Default for Config
@@ -37,6 +40,8 @@ impl Default for Config
             NHENTAI_TAGS: None,
             SLEEP_INTERVAL: Some(50000),
             USER_AGENT: "".to_owned(),
+            CONVERT_TO_WEBP: Some(false),
+            WEBP_QUALITY: Some(100),  // Default quality level
         }
     }
 }

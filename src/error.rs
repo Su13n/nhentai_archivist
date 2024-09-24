@@ -1,5 +1,7 @@
 // Copyright (c) 2024 구FS, all rights reserved. Subject to the MIT licence in `licence.md`.
 
+//use image::ImageError;
+
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error
@@ -54,6 +56,12 @@ pub enum HentaiDownloadError
 
     #[error("Saving hentai failed with: {0}")]
     Zip(#[from] zip::result::ZipError), // zip error
+
+    #[error("Decoding image failed with: {source}")]
+    ImageDecodingError {
+        #[from]
+        source: image::ImageError,
+    },
 }
 
 
